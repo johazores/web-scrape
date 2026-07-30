@@ -12,6 +12,7 @@ Before crawling:
 - Use conservative request limits.
 - Respect `robots.txt` unless the website owner has explicitly approved a different migration process.
 - Store credentials and exports securely.
+- Add only trusted website hosts to `ALLOWED_HOSTS`; credentials and custom headers are scoped to that list.
 - Delete temporary exports when they are no longer needed.
 
 The project does not include proxy rotation, CAPTCHA bypass, anti-bot evasion, credential discovery, or other mechanisms intended to avoid website controls.

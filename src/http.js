@@ -1,5 +1,3 @@
-const axios = require("axios");
-
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const RETRY_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
@@ -27,12 +25,26 @@ function createScheduler(delayMs) {
   };
 }
 
-function buildHeaders(config) {
+function isAllowedCredentialHost(config, urlValue) {
+  try {
+    const url = new URL(urlValue || config.baseUrl);
+    return config.allowedHosts.has(url.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+function buildHeaders(config, urlValue) {
   const headers = {
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "User-Agent": config.userAgent,
-    ...config.extraHeaders,
   };
+
+  if (!isAllowedCredentialHost(config, urlValue)) {
+    return headers;
+  }
+
+  Object.assign(headers, config.extraHeaders);
 
   if (config.cookie) {
     headers.Cookie = config.cookie;
@@ -52,14 +64,39 @@ function buildHeaders(config) {
   return headers;
 }
 
-function createHttpClient(config) {
+function parseRetryAfter(value, now = Date.now()) {
+  if (!value) {
+    return null;
+  }
+
+  const seconds = Number.parseInt(value, 10);
+
+  if (Number.isFinite(seconds) && String(seconds) === String(value).trim()) {
+    return Math.max(0, seconds * 1000);
+  }
+
+  const retryAt = Date.parse(value);
+
+  if (!Number.isNaN(retryAt)) {
+    return Math.max(0, retryAt - now);
+  }
+
+  return null;
+}
+
+function createHttpClient(config, requestFunction) {
   const waitForTurn = createScheduler(config.requestDelayMs);
-  const defaultHeaders = buildHeaders(config);
+  const request =
+    requestFunction ||
+    ((options) => {
+      const axios = require("axios");
+      return axios.request(options);
+    });
 
   async function requestOnce(url, options = {}) {
     await waitForTurn();
 
-    return axios.request({
+    return request({
       url,
       method: "GET",
       timeout: config.requestTimeoutMs,
@@ -67,7 +104,7 @@ function createHttpClient(config) {
       responseType: options.responseType || "text",
       validateStatus: () => true,
       headers: {
-        ...defaultHeaders,
+        ...buildHeaders(config, url),
         ...(options.headers || {}),
       },
     });
@@ -84,10 +121,8 @@ function createHttpClient(config) {
           return response;
         }
 
-        const retryAfter = Number.parseInt(response.headers["retry-after"], 10);
-        const delay = Number.isFinite(retryAfter)
-          ? retryAfter * 1000
-          : Math.min(1000 * 2 ** attempt, 10000);
+        const retryAfter = parseRetryAfter(response.headers["retry-after"]);
+        const delay = retryAfter ?? Math.min(1000 * 2 ** attempt, 10000);
 
         await sleep(delay);
       } catch (error) {
@@ -107,6 +142,7 @@ function createHttpClient(config) {
   async function get(url, options = {}) {
     const requestedUrl = url;
     const redirects = [];
+    const seenUrls = new Set([url]);
     const startedAt = Date.now();
     let currentUrl = url;
 
@@ -115,15 +151,46 @@ function createHttpClient(config) {
 
       if (REDIRECT_STATUSES.has(response.status) && response.headers.location) {
         if (redirectCount === config.maxRedirects) {
-          throw new Error(`Maximum redirects exceeded for ${requestedUrl}`);
+          const error = new Error(`Maximum redirects exceeded for ${requestedUrl}`);
+          error.status = response.status;
+          error.redirects = redirects;
+          throw error;
         }
 
         const nextUrl = new URL(response.headers.location, currentUrl).href;
-        redirects.push({
+        const redirect = {
           from: currentUrl,
           to: nextUrl,
           status: response.status,
-        });
+        };
+        redirects.push(redirect);
+
+        if (seenUrls.has(nextUrl)) {
+          const error = new Error(`Redirect loop detected for ${requestedUrl}`);
+          error.status = response.status;
+          error.redirects = redirects;
+          throw error;
+        }
+
+        if (
+          options.allowRedirect &&
+          !options.allowRedirect(nextUrl, currentUrl, response)
+        ) {
+          redirect.blocked = true;
+
+          return {
+            requestedUrl,
+            finalUrl: currentUrl,
+            status: response.status,
+            headers: response.headers,
+            data: response.data,
+            redirects,
+            redirectBlocked: nextUrl,
+            durationMs: Date.now() - startedAt,
+          };
+        }
+
+        seenUrls.add(nextUrl);
         currentUrl = nextUrl;
         continue;
       }
@@ -135,6 +202,7 @@ function createHttpClient(config) {
         headers: response.headers,
         data: response.data,
         redirects,
+        redirectBlocked: null,
         durationMs: Date.now() - startedAt,
       };
     }
@@ -152,5 +220,7 @@ module.exports = {
   buildHeaders,
   createHttpClient,
   createScheduler,
+  isAllowedCredentialHost,
+  parseRetryAfter,
   sleep,
 };
