@@ -1,19 +1,30 @@
 {
   "name": "web-scrape",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A simple, responsible website migration crawler for content and SEO preservation.",
+  "main": "scrape.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "scrape": "node scrape.js",
+    "test": "node --test",
+    "check": "node scripts/check.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/johazores/web-scrape.git"
   },
-  "keywords": [],
+  "keywords": [
+    "website-migration",
+    "content-migration",
+    "seo",
+    "crawler",
+    "archive"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.18.1"
+  },
   "bugs": {
     "url": "https://github.com/johazores/web-scrape/issues"
   },
