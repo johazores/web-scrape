@@ -1,7 +1,7 @@
 {
   "name": "web-scrape",
   "version": "1.0.0",
-  "description": "A simple, responsible website migration crawler for content and SEO preservation.",
+  "description": "Responsible website migration crawler for structured content exports and SEO preservation.",
   "main": "scrape.js",
   "scripts": {
     "scrape": "node scrape.js",
@@ -15,12 +15,16 @@
   "keywords": [
     "website-migration",
     "content-migration",
-    "seo",
+    "web-scraping",
     "crawler",
-    "archive"
+    "seo",
+    "sitemap",
+    "robots-txt",
+    "content-export",
+    "web-archiving"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Johanssen Azores",
+  "license": "MIT",
   "type": "commonjs",
   "engines": {
     "node": ">=20.18.1"
