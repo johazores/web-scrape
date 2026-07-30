@@ -50,7 +50,7 @@ function createReports(state) {
   const redirects = pages
     .filter((page) => page.redirects?.length)
     .map((page) => ({
-      url: page.url,
+      url: page.requestedUrl || page.url,
       finalUrl: page.finalUrl,
       chain: page.redirects,
     }));
@@ -59,8 +59,14 @@ function createReports(state) {
     .filter((page) => !page.description)
     .map((page) => page.url);
   const missingH1 = pages.filter((page) => page.h1Count === 0).map((page) => page.url);
+  const successfulRequestedUrls = new Set(
+    pages.map((page) => page.requestedUrl || page.url)
+  );
   const orphanPages = state.sitemapPages.filter(
-    (url) => url !== state.baseUrl && !inboundCounts.get(url)
+    (url) =>
+      successfulRequestedUrls.has(url) &&
+      url !== state.baseUrl &&
+      !inboundCounts.get(url)
   );
   const duplicateTitles = groupDuplicates(pages, "title");
   const duplicateDescriptions = groupDuplicates(pages, "description");

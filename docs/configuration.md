@@ -12,7 +12,7 @@ Copy `.env.example` to `.env`. Empty optional values can be left unchanged.
 
 | Variable | Default | Description |
 |---|---:|---|
-| `MAX_PAGES` | `500` | Maximum successful pages exported. |
+| `MAX_PAGES` | `500` | Maximum page URLs attempted during one crawl. |
 | `MAX_DEPTH` | `5` | Maximum internal-link depth from a seed URL. |
 | `CONCURRENCY` | `2` | Maximum pages processed at the same time. |
 | `REQUEST_TIMEOUT_MS` | `15000` | Request timeout in milliseconds. |

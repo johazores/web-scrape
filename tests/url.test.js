@@ -49,3 +49,9 @@ test("applies include and exclude patterns", () => {
   assert.equal(isCrawlableUrl("https://example.com/about", options), false);
   assert.equal(isCrawlableUrl("https://example.com/docs/private/one", options), false);
 });
+
+
+test("default-style exclusions match both a section root and its children", () => {
+  assert.equal(matchesPattern("https://example.com/wp-admin", "/wp-admin*"), true);
+  assert.equal(matchesPattern("https://example.com/wp-admin/edit", "/wp-admin*"), true);
+});

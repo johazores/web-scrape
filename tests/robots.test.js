@@ -34,3 +34,11 @@ Allow: /
 
   assert.equal(robots.isAllowed("https://example.com/about"), true);
 });
+
+test("deny-all robots policy blocks every URL", () => {
+  const { denyAllRobots } = require("../src/robots");
+  const robots = denyAllRobots();
+
+  assert.equal(robots.blocked, true);
+  assert.equal(robots.isAllowed("https://example.com/"), false);
+});
