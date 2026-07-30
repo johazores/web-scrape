@@ -12,9 +12,15 @@ async function createRenderer(config) {
   }
 
   const browser = await playwright.chromium.launch({ headless: true });
+  const extraHTTPHeaders = { ...config.extraHeaders };
+
+  if (config.authType === "bearer" && config.authToken) {
+    extraHTTPHeaders.Authorization = `Bearer ${config.authToken}`;
+  }
+
   const context = await browser.newContext({
     userAgent: config.userAgent,
-    extraHTTPHeaders: config.extraHeaders,
+    extraHTTPHeaders,
     httpCredentials:
       config.authType === "basic"
         ? {

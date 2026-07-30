@@ -137,6 +137,7 @@ function parseRobots(content, userAgent, baseUrl) {
   }
 
   return {
+    blocked: false,
     crawlDelay,
     groups,
     isAllowed,
@@ -147,6 +148,7 @@ function parseRobots(content, userAgent, baseUrl) {
 
 function allowAllRobots() {
   return {
+    blocked: false,
     crawlDelay: null,
     groups: [],
     isAllowed: () => true,
@@ -155,8 +157,20 @@ function allowAllRobots() {
   };
 }
 
+function denyAllRobots() {
+  return {
+    blocked: true,
+    crawlDelay: null,
+    groups: [],
+    isAllowed: () => false,
+    rules: [],
+    sitemaps: [],
+  };
+}
+
 module.exports = {
   allowAllRobots,
+  denyAllRobots,
   parseRobots,
   ruleToRegExp,
 };

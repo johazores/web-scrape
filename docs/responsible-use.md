@@ -24,4 +24,4 @@ The project does not include proxy rotation, CAPTCHA bypass, anti-bot evasion, c
 - JavaScript redirects are not recorded as full HTTP redirect chains when Playwright rendering is enabled.
 - Form-based login automation is not included.
 - Media downloads preserve source files but do not rewrite HTML automatically.
-- Very large sites may require a database-backed queue, which is intentionally outside this projects scope.
+- Very large sites may require a database-backed queue, which is intentionally outside this project's scope.

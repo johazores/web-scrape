@@ -20,6 +20,8 @@ The crawler falls back to `BASE_URL` when no sitemap pages are available.
 
 This is expected when `RESPECT_ROBOTS=true`. Confirm that you have authorization and coordinate with the website owner before changing robots behavior.
 
+The crawl stops when robots rules cannot be verified because of a server or network error. A missing `robots.txt` response with HTTP 404 or 410 is treated as no published restrictions.
+
 ## Content contains menus or missing article text
 
 Set a more specific first value in `CONTENT_SELECTORS` and add unwanted elements to `EXCLUDE_SELECTORS`.

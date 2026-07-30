@@ -10,10 +10,15 @@ const {
 } = require("./output");
 const { createReports, writeReports } = require("./report");
 const { createRenderer } = require("./render");
-const { allowAllRobots, parseRobots } = require("./robots");
+const { allowAllRobots, denyAllRobots, parseRobots } = require("./robots");
 const { discoverSitemaps } = require("./sitemap");
 const { loadState, saveState } = require("./state");
-const { isCrawlableUrl, normalizeUrl, shortHash } = require("./url");
+const {
+  isCrawlableUrl,
+  isInternalUrl,
+  normalizeUrl,
+  shortHash,
+} = require("./url");
 
 function addToQueue(state, item, config) {
   const normalized = normalizeUrl(item.url, config.baseUrl, config);
@@ -26,7 +31,11 @@ function addToQueue(state, item, config) {
     return false;
   }
 
-  if (state.visited[normalized] || state.queued.includes(normalized)) {
+  if (
+    state.visited[normalized] ||
+    state.resolved[normalized] ||
+    state.queued.includes(normalized)
+  ) {
     return false;
   }
 
@@ -56,15 +65,25 @@ async function loadRobots(http, config, directories) {
       headers: { Accept: "text/plain,*/*;q=0.8" },
     });
 
-    if (response.status < 200 || response.status >= 300) {
+    if (response.status === 404 || response.status === 410) {
       return allowAllRobots();
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      console.warn(`robots.txt returned HTTP ${response.status}; crawling is blocked.`);
+      return denyAllRobots();
+    }
+
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`robots.txt returned HTTP ${response.status}`);
     }
 
     writeText(path.join(directories.sitemap, "robots.txt"), String(response.data));
     return parseRobots(response.data, config.userAgent, config.baseUrl);
   } catch (error) {
-    console.warn(`Unable to read robots.txt: ${error.message}`);
-    return allowAllRobots();
+    throw new Error(
+      `Unable to verify robots.txt while RESPECT_ROBOTS=true: ${error.message}`
+    );
   }
 }
 
@@ -118,6 +137,24 @@ async function processPage(item, context) {
       });
     }
 
+    if (!isInternalUrl(response.finalUrl, config)) {
+      state.skipped.push({
+        url: item.url,
+        depth: item.depth,
+        status: response.status,
+        finalUrl: response.finalUrl,
+        redirects: response.redirects,
+        reason: "redirected outside allowed hosts",
+      });
+      state.visited[item.url] = {
+        status: response.status,
+        result: "skipped",
+        finalUrl: response.finalUrl,
+        visitedAt: new Date().toISOString(),
+      };
+      return [];
+    }
+
     if (!isHtmlResponse(response)) {
       state.skipped.push({
         url: item.url,
@@ -145,6 +182,7 @@ async function processPage(item, context) {
 
     const files = writePage(page, directories, config);
     const summary = {
+      requestedUrl: item.url,
       url: page.source.normalizedUrl,
       finalUrl: page.source.finalUrl,
       status: page.source.status,
@@ -158,6 +196,15 @@ async function processPage(item, context) {
     };
 
     state.pages[item.url] = summary;
+    state.resolved[page.source.normalizedUrl] = item.url;
+
+    if (page.source.normalizedUrl !== item.url) {
+      state.queue = state.queue.filter(
+        (queuedItem) => queuedItem.url !== page.source.normalizedUrl
+      );
+      removeFromQueued(state, page.source.normalizedUrl);
+    }
+
     state.failures = state.failures.filter((failure) => failure.url !== item.url);
     state.visited[item.url] = {
       status: response.status,
@@ -183,6 +230,7 @@ async function runCrawl(config) {
     state.queue = [];
     state.queued = [];
     state.visited = {};
+    state.resolved = {};
     state.pages = {};
     state.failures = [];
     state.skipped = [];
@@ -204,7 +252,9 @@ async function runCrawl(config) {
   }
 
   const http = createHttpClient(effectiveConfig);
-  const sitemapDiscovery = await discoverSitemaps(http, effectiveConfig, robots.sitemaps);
+  const sitemapDiscovery = robots.blocked
+    ? { pages: [], records: [] }
+    : await discoverSitemaps(http, effectiveConfig, robots.sitemaps);
   state.sitemapPages = sitemapDiscovery.pages.filter((url) =>
     isCrawlableUrl(url, effectiveConfig)
   );

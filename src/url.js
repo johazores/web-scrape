@@ -7,7 +7,6 @@ const TRACKING_PARAMETERS = new Set([
   "msclkid",
   "mc_cid",
   "mc_eid",
-  "ref",
 ]);
 
 const SKIPPED_EXTENSIONS = new Set([

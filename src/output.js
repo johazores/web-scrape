@@ -63,9 +63,7 @@ function getPageDirectory(pagesDirectory, normalizedUrl) {
     segments.push("home");
   }
 
-  if (url.search) {
-    segments[segments.length - 1] += `--${shortHash(url.search)}`;
-  }
+  segments[segments.length - 1] += `--${shortHash(normalizedUrl, 8)}`;
 
   return path.join(pagesDirectory, ...segments);
 }

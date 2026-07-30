@@ -31,6 +31,7 @@ function createState(config) {
     queue: [],
     queued: [],
     visited: {},
+    resolved: {},
     pages: {},
     failures: [],
     skipped: [],
@@ -67,6 +68,7 @@ function loadState(config) {
   state.queue ||= [];
   state.queued ||= state.queue.map((item) => item.url);
   state.visited ||= {};
+  state.resolved ||= {};
   state.pages ||= {};
   state.failures ||= [];
   state.skipped ||= [];
