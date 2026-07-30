@@ -31,7 +31,7 @@ Copy `.env.example` to `.env`. Empty optional values can be left unchanged.
 | `SITEMAP_URLS` | empty | Comma-separated explicit sitemap URLs. |
 | `INCLUDE_URL_PATTERNS` | empty | Optional comma-separated wildcard allowlist. |
 | `EXCLUDE_URL_PATTERNS` | common private and commerce paths | Comma-separated wildcard blocklist. |
-| `ALLOWED_HOSTS` | base host | Additional internal hostnames, comma-separated. |
+| `ALLOWED_HOSTS` | base host | Additional internal hostnames, comma-separated. Credentials and custom headers are sent only to these hosts. |
 | `DROP_TRACKING_PARAMS` | `true` | Remove common analytics parameters such as `utm_*`. |
 | `REMOVE_QUERY_PARAMS` | empty | Additional query parameter names to remove. |
 
@@ -83,7 +83,7 @@ AUTH_TOKEN=replace-me
 EXTRA_HEADERS={"X-Migration-Key":"replace-me"}
 ```
 
-Do not commit `.env` files or credentials.
+Do not commit `.env` files or credentials. Cookies, authentication, and `EXTRA_HEADERS` are never forwarded to hosts outside `ALLOWED_HOSTS`.
 
 ## JavaScript rendering
 

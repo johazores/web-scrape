@@ -129,7 +129,27 @@ async function processPage(item, context) {
 
   try {
     console.log(`Scraping [depth ${item.depth}]: ${item.url}`);
-    const response = await fetcher.get(item.url);
+    const response = await fetcher.get(item.url, {
+      allowRedirect: (nextUrl) => isInternalUrl(nextUrl, config),
+    });
+
+    if (response.redirectBlocked) {
+      state.skipped.push({
+        url: item.url,
+        depth: item.depth,
+        status: response.status,
+        finalUrl: response.finalUrl,
+        redirects: response.redirects,
+        reason: `redirected outside allowed hosts: ${response.redirectBlocked}`,
+      });
+      state.visited[item.url] = {
+        status: response.status,
+        result: "skipped",
+        finalUrl: response.finalUrl,
+        visitedAt: new Date().toISOString(),
+      };
+      return [];
+    }
 
     if (response.status < 200 || response.status >= 300) {
       throw Object.assign(new Error(`HTTP ${response.status}`), {

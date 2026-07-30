@@ -22,6 +22,10 @@ This is expected when `RESPECT_ROBOTS=true`. Confirm that you have authorization
 
 The crawl stops when robots rules cannot be verified because of a server or network error. A missing `robots.txt` response with HTTP 404 or 410 is treated as no published restrictions.
 
+## A page redirects to another domain
+
+Cross-host redirects are stopped before the target is requested unless its hostname is listed in `ALLOWED_HOSTS`. This prevents accidental external crawling and credential leakage. Add only website aliases or trusted migration hosts that are intentionally part of the crawl.
+
 ## Content contains menus or missing article text
 
 Set a more specific first value in `CONTENT_SELECTORS` and add unwanted elements to `EXCLUDE_SELECTORS`.
